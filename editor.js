@@ -1,7 +1,8 @@
 var myFloor;
 var myImage;
 var myHouse;
-var myPlan
+var myPlan;
+var myRoomsPlans;
 var eps = 0.0000001
 function len2(a)    { return Math.sqrt(a.x*a.x + a.y*a.y);}
 function len3(a)    { return Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);}
@@ -106,7 +107,7 @@ class polygon3D {
         var p = []
         for (var i = 0; i < this.points.length; i++){
             var projecction = image.projection(this.points[i]);
-            p.push(copy2(projecction));
+            p.push(projecction);
         }
         return p
     }
@@ -119,14 +120,68 @@ class polygon3D {
         }
         polygon.set('points', p.join(' '));
     }
+    move(v){
+        for (let i = 0; i < this.points.length; i++){
+            this.points[i].x+=v.x
+            this.points[i].y+=v.y
+            this.points[i].z+=v.z
+        }
+    }
 };
 class wall {
-    constructor (placement) {
+    constructor (placement, id) {
+        this.id = id
+        this.pictures = []
         this.placement = placement;
-        this.minx = 0;
-        this.miny = 0;
-        this.maxx = 0;
-        this.maxy = 0;
+        this.pictures.push(placement.project(myImage));
+        this.SVGpols = []
+        this.minx = 1000000;
+        this.miny = 1000000;
+        this.maxx = -1000000;
+        this.maxy = -1000000;
+        this.avarage = 0;
+        for (let i = 0; i < this.pictures[0].length; i++){
+            this.minx = Math.min(this.minx, this.pictures[0][i].x)
+            this.miny = Math.min(this.miny, this.pictures[0][i].y)
+            this.maxx = Math.max(this.maxx, this.pictures[0][i].x)
+            this.maxy = Math.max(this.maxy, this.pictures[0][i].y)
+        }
+        for (let i = 0; i < placement.points.length; i++)
+            this.avarage += placement.points[i].z
+        this.avarage /= placement.points.length
+
+        // let p=[]
+        // let arr = this.pictures[0]
+        // for (let t = 0; t < arr.length; t++){
+        //     p.push(arr[t].x)
+        //     p.push(arr[t].y)
+        // }
+        // createPolygonFromPoints(p)
+    }
+    overlap(w){
+        if (this.avarage - w.avarage < eps)
+            return
+        for (let t = 0; t < w.pictures.length;t++){
+            let newPictures = []
+            for (let k = 0; k < this.pictures.length;k++){
+                let res = overlap(this.pictures[k], w.pictures[t])
+                newPictures=newPictures.concat(res)
+            }
+            this.pictures=newPictures
+        }
+    }
+    show(){
+        for (let i = 0; i < this.pictures.length; i++){
+            let p = []
+            for (let j = 0; j < this.pictures[i].length; j++){
+                p.push(this.pictures[i][j].x)
+                p.push(this.pictures[i][j].y)
+            }
+            console.log(p)
+            if (this.SVGpols.length <= i)
+                this.SVGpols.push(createPolygonFromPoints(p))
+            else this.SVGpols[i].set('points', p.join(' '));
+        }
     }
 }
 class room {
@@ -140,6 +195,22 @@ class room {
             this.placement.points.push(new point3(points[i].x, (myImage.pos.y - myImage.height) / 2, points[i].y + myImage.dist));
         }
         this.placement.show(myImage, this.picture);
+        this.walls = []
+    }
+    buildWalls(height){
+        console.log("buildWalls room: ", this.id)
+        this.picture.set('points', [0,0,1,1,1,0].join(' '));
+        let n = this.plan.length
+        let h = new point3(0, height,0)
+        for (let j = 0; j < n; j++){
+            let w = new wall(new polygon3D([copy3(this.placement.points[j]), copy3(this.placement.points[(j+1)%n]), add3(this.placement.points[(j+1)%n], h), add3(this.placement.points[j], h)]),this.id)
+            if (w.maxx - w.minx > 10 * eps && w.maxy - w.miny > 10 * eps)
+                this.walls.push(w);
+        }
+    }
+    move(v){
+        this.placement.move(v)
+        this.placement.show(myImage, this.picture)
     }
 };
 class floor {
@@ -152,21 +223,28 @@ class floor {
         this.plan = points;
         this.placement = new polygon3D([]);
         for (let i = 0; i < rooms.length; i++){
-            this.rooms.push(rooms[i])
+            this.rooms.push(new room(rooms[i], i))
         }
         for (let i = 0; i < points.length; i++){
             this.placement.points.push(new point3(points[i].x, (myImage.pos.y - myImage.height) / 2, points[i].y + myImage.dist));
         }
         this.placement.show(myImage, this.picture);
     }
+    buildWalls(height){
+        console.log("buildWalls floors")
+        for (let i = 0; i < this.rooms.length; i++)
+            this.rooms[i].buildWalls(height)
+    }
+    hide(){
+        this.picture.set('points', [0,0,1,1,1,0].join(' '));
+        for (let i = 0; i < this.rooms.length; i++)
+            this.rooms[i].picture.set('points', [0,0,1,1,1,0].join(' '));
+    }
     move(x){
         if (this.moved[0] != x){
             this.moved[1] = this.moved[0];
             this.moved[0] = x;
         }
-    }
-    hide(){
-        this.picture.set('points', [0,0,1,1,1,0].join(' '));
     }
     buildByPicture(){
         if (this.moved[0] != -1){ 
@@ -238,8 +316,12 @@ class floor {
             }
         }
     }
-    moveLeft(delta){
-
+    move(v){
+        this.placement.move(v)
+        this.placement.show(myImage, this.picture)
+        
+        for (let i = 0; i < this.rooms.length; i++)
+            this.rooms[i].move(v)
     }
 }
 class house{
@@ -267,66 +349,76 @@ class house{
         this.walls=[]
         this.wallProjections=[]
         for (let i = 0; i < this.floors.length; i++){
-            this.floors[i].hide()
-            let n = this.floors[i].plan.length
-            let h = new point3(0, this.height[i],0)
+            this.floors[i].hide();
             if (i < this.floors.length-1 || i < 1)
-            for (let j = 0; j < n; j++){
-                this.walls.push(new polygon3D([this.floors[i].placement.points[j], this.floors[i].placement.points[(j+1)%n], add3(this.floors[i].placement.points[(j+1)%n], h), add3(this.floors[i].placement.points[j], h)]))
-                this.wallProjections.push([this.walls[this.walls.length-1].project(myImage)])
-            }
+                this.floors[i].buildWalls(this.height[i])
         }
-        for (let i = 0; i < this.walls.length; i++){
-            for (let j = 0; j < this.walls.length; j++){
-                if (j == i)
-                    continue
-
-                let a = this.wallProjections[i]
-                let b = this.wallProjections[j]
-                let sa = 0
-                let sb = 0
-                let ma = 10000000
-                let mb = 10000000
-                for (let t = 0; t < this.walls[i].points.length; t++){
-                    ma = Math.min(ma, this.walls[i].points[t].z)
-                    sa += this.walls[i].points[t].z
-                }
-                for (let t = 0; t < this.walls[j].points.length; t++){
-                    mb = Math.min(mb, this.walls[j].points[t].z)
-                    sb += this.walls[j].points[t].z
-                }
-                sa/=this.walls[i].points.length
-                sb/=this.walls[j].points.length
-                if (sa - sb <= eps)
-                    continue
-
-                for (let t = 0; t < b.length;t++){
-                    let newA = []
-                    for (let k = 0; k < a.length;k++){
-                        let res = overlap(a[k],b[t])
-                        newA=newA.concat(res)
-                    }
-                    a=newA
-                    // this.showWalls()
-                    // return
-                }
-                this.wallProjections[i]=a
-            }
+        let walls = []
+        for (let i = 0; i < this.floors.length; i++)
+            for (let j = 0; j < this.floors[i].rooms.length; j++)
+                for (let k = 0; k < this.floors[i].rooms[j].walls.length; k++)
+                    walls.push(this.floors[i].rooms[j].walls[k])
+        console.dir(walls)
+        for (let i = 0; i < walls.length; i++)
+            for (let j = 0; j < walls.length; j++)
+                walls[i].overlap(walls[j]);
+        console.dir(walls)
+        for (let i = 0; i < walls.length; i++){
+            walls[i].show();
         }
+
+        // for (let i = 0; i < this.walls.length; i++){
+        //     for (let j = 0; j < this.walls.length; j++){
+        //         if (j == i)
+        //             continue
+
+        //         let a = this.wallProjections[i]
+        //         let b = this.wallProjections[j]
+        //         let sa = 0
+        //         let sb = 0
+        //         let ma = 10000000
+        //         let mb = 10000000
+        //         for (let t = 0; t < this.walls[i].points.length; t++){
+        //             ma = Math.min(ma, this.walls[i].points[t].z)
+        //             sa += this.walls[i].points[t].z
+        //         }
+        //         for (let t = 0; t < this.walls[j].points.length; t++){
+        //             mb = Math.min(mb, this.walls[j].points[t].z)
+        //             sb += this.walls[j].points[t].z
+        //         }
+        //         sa/=this.walls[i].points.length
+        //         sb/=this.walls[j].points.length
+        //         if (sa - sb <= eps)
+        //             continue
+
+        //         for (let t = 0; t < b.length;t++){
+        //             let newA = []
+        //             for (let k = 0; k < a.length;k++){
+        //                 let res = overlap(a[k],b[t])
+        //                 newA=newA.concat(res)
+        //             }
+        //             a=newA
+        //             // this.showWalls()
+        //             // return
+        //         }
+        //         this.wallProjections[i]=a
+        //     }
+        // }
         this.showWalls()
     }
     showWalls() {
-        for (let i = 0; i < this.wallProjections.length; i++){
-            for (let j = 0; j < this.wallProjections[i].length; j++){
-                let p=[]
-                let arr = this.wallProjections[i][j]
-                for (let t = 0; t < arr.length; t++){
-                    p.push(arr[t].x)
-                    p.push(arr[t].y)
-                }
-                createPolygonFromPoints(p)
-            }
-        }
+        // for (let i = 0; i < this.wallProjections.length; i++){
+        //     for (let j = 0; j < this.wallProjections[i].length; j++){
+        //         let p=[]
+        //         let arr = this.wallProjections[i][j]
+        //         for (let t = 0; t < arr.length; t++){
+        //             p.push(arr[t].x)
+        //             p.push(arr[t].y)
+        //         }
+        //         createPolygonFromPoints(p)
+        //     }
+        // }
+        
     }
 };
 
@@ -352,7 +444,7 @@ function initiate(){
         myPlan.push(new point2(-g_polygon[i], g_polygon[i+1]-m));
     }
     myPlan=[new point2(0,0), new point2(0,1000), new point2(1000,1000), new point2(1000,0)]
-    let rooms = []
+    myRoomsPlans = []
     for (let i = 0; i < data.floors.placements.length; i++){
         let roomPlan = []
         for (let j = 0; j < data.floors.placements[i].length; j+=2){
@@ -360,10 +452,10 @@ function initiate(){
             roomPlan.push(new point2(data.floors.placements[i][j], data.floors.placements[i][j+1]));
         }
         console.log(roomPlan)
-        rooms.push(new room(roomPlan, i))
+        myRoomsPlans.push(roomPlan)
     }
     //console.log(rooms)
-    myHouse = new house(new floor(myPlan, rooms))    
+    myHouse = new house(new floor(myPlan, myRoomsPlans))    
     // for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
     //     myHouse.floors[myHouse.n].placement.points[i].x-=1600;
     //     myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
@@ -378,7 +470,7 @@ function initiate(){
 
 function logFlor(){
     //console.dir(myImage);
-    //console.dir(myHouse);
+    console.dir(myHouse);
     // let a1 = [0,1,4]
     // let a2 = [2,3]
     // a1.splice(2, 0, ...a2);
@@ -397,7 +489,7 @@ function logFlor(){
 }
 
 function AddFloor(){
-    myHouse.addFloor(myPlan, [],0,0,1,1)
+    myHouse.addFloor(myPlan, myRoomsPlans,0,0,1,1)
 }
 
 function buildWalls(){
@@ -405,17 +497,11 @@ function buildWalls(){
 }
 
 function Left() {
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].x-=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+    myHouse.floors[myHouse.n].move(new point3(-2,0,0))
 }
 
 function Right() {
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].x+=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+    myHouse.floors[myHouse.n].move(new point3(2,0,0))
 }
 
 function Down() {
@@ -424,10 +510,7 @@ function Down() {
     if (myHouse.n+1 != myHouse.height.length)
         myHouse.height[myHouse.n]+=2
     else myHouse.height[myHouse.n]-=2
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].y-=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+        myHouse.floors[myHouse.n].move(new point3(0,-2,0))
 }
 
 function Up() {
@@ -436,24 +519,15 @@ function Up() {
     if (myHouse.n+1 != myHouse.height.length)
         myHouse.height[myHouse.n]-=2
     else myHouse.height[myHouse.n]+=2
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].y+=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+        myHouse.floors[myHouse.n].move(new point3(0,2,0))
 }
 
 function Forward() {
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].z+=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+    myHouse.floors[myHouse.n].move(new point3(0,0,2))
 }
 
 function Back() {
-    for (let i = 0; i < myHouse.floors[myHouse.n].placement.points.length; i++){
-        myHouse.floors[myHouse.n].placement.points[i].z-=2;
-        myHouse.floors[myHouse.n].placement.show(myImage, myHouse.floors[myHouse.n].picture);
-    }   
+    myHouse.floors[myHouse.n].move(new point3(0,0,-2))
 }
 
 let data = {
