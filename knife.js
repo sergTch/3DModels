@@ -112,8 +112,6 @@ function spawnNewP(polygon, knifeP){
                     while (t < knifeP.length){
                         for (let k = 0; k < polygon.length; k++){
                             if (polygon[k] == knifeP[(j+t)%knifeP.length]){
-                                // if ((k == i-1 || k == i+1)&&t == 1)
-                                //     break 
                                 let p1 = []
                                 let p2 = []
                                 for (let ind = 0; ind <= t; ind++){
@@ -136,13 +134,9 @@ function spawnNewP(polygon, knifeP){
         }
     }
     if (insideP(polygon, knifeP)){
-        
-        //console.log("inside: ",polygon)
         return []
     }
     else {
-        //console.log("outside: ",polygon)
-        //showFromPoints2(polygon)
         return [polygon]
     }
 }
@@ -163,15 +157,24 @@ function outsideP(p1, p2){
     return true && !insideP(p1,p2)
 }
 
-function overlap(pol, knf){
-    let knifeP = knf.slice()
-    let polygon = pol.slice()
+function rebuild(knifeP, polygon){
+    for (let i = 0; i < knifeP.length; i++)
+        if (knifeP[i].eq(knifeP[(i+1)%knifeP.length])){
+            knifeP.splice(i, 1);
+            i--
+        }
+    
+    for (let i = 0; i < polygon.length; i++)
+        if (polygon[i].eq(polygon[(i+1)%polygon.length])){
+            polygon.splice(i, 1);
+            i--
+        }
     
     for (let i = 0; i < knifeP.length; i++)
         for (let j = 0; j < polygon.length; j++)
             if (knifeP[i].eq(polygon[j]))
                 knifeP[i] = polygon[j]
-                
+
     for (let i = 0; i < knifeP.length; i++){
         for (let j = 0; j < polygon.length; j++){
             a = knifeP[i]
@@ -186,9 +189,76 @@ function overlap(pol, knf){
             }
         }
     }
-    //console.log("overlap",knifeP,polygon)
+}
+
+function overlap(pol, knf){
+    let knifeP = knf.slice()
+    let polygon = pol.slice()
+    
+    rebuild(knifeP, polygon)
     let res = spawnNewP(polygon, knifeP)
     //console.log("res: ", res)
+    return res
+}
+
+function ConcatNext(polygon1, polygon2){
+    for (let i = 0; i < polygon1.length; i++){
+        for (let j = 0; j < polygon2.length; j++){
+            if (polygon2[j] == polygon1[i]){
+                //console.log(knifeP[j])
+                if (inside(polygon1,smul2(add2(polygon2[j], polygon2[(j+1)%polygon2.length]), 0.5))==-1){
+                    let t = 1
+                    while (t < polygon2.length){
+                        for (let k = 0; k < polygon1.length; k++){
+                            if (polygon1[k] == polygon2[(j+t)%polygon2.length]){
+                                // if ((k == i-1 || k == i+1)&&t == 1)
+                                //     break 
+                                let p1 = []
+                                let p2 = []
+                                for (let ind = 0; ind <= t; ind++){
+                                    p1.push(polygon2[(j+ind)%polygon2.length])
+                                    p2.push(polygon2[(j+ind)%polygon2.length])
+                                }
+                                for (let ind = k+1; ind%polygon1.length != i; ind++)
+                                    p1.push(polygon1[ind%polygon1.length])
+                                for (let ind = k-1+polygon1.length; ind%polygon1.length != i; ind--)
+                                    p2.push(polygon1[ind%polygon1.length])
+                                //console.log("continue: ",p1,p2)
+                                if (insideP(p1, p2))
+                                    return ConcatNext(p2, polygon2)
+                                else return ConcatNext(p1, polygon2)
+                            }
+                        }
+                        t+=1
+                    }
+                }
+            }
+        }
+    }
+    
+    if (insideP(polygon1, polygon2))
+        return [polygon2]
+    
+    if (insideP(polygon2, polygon1))
+        return [polygon1]
+    return [polygon1,polygon2]
+}
+
+function concat(p1, p2){
+    let polygon1 = []
+    let polygon2 = []
+
+    for (let i = 0; i < p1.length; i++)
+        polygon1.push(copy2(p1[i]))
+    for (let i = 0; i < p2.length; i++)
+        polygon2.push(copy2(p2[i]))
+    
+    //console.log("concat: ",p1, p2)
+    //console.log("concat2: ",polygon1, polygon2)
+    rebuild(polygon1, polygon2)
+
+    let res = ConcatNext(polygon1, polygon2)
+    
     return res
 }
 
