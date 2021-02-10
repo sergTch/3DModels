@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=PT+Sans&family=Open+Sans&family=Roboto&display=swap');
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	/*font-family: 'Open Sans', sans-serif;*/
+	font-family: 'Roboto', sans-serif;
+	/*font-family: 'PT Sans', sans-serif;*/
+	user-select: none;
+}
+
+.App {
+	height: 100vh;
+	/*max-height: 100vh;*/
+	overflow: hidden;
+	background: #535353;
+	border: 1px solid #0f0f0f;
+	display: flex;
+}
+
+.Border {
+	margin: 3px;
+	border: 1px solid #282828;
+	display: flex;
+	flex: 1;
+}
+
+
+
+
+
+.Tools {
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid #282828;
+}
+
+.Tools button {
+	font-size: 16px;
+	margin: 3px;
+	width: 40px;
+	height: 30px;
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	outline: none;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: transparent;
+	color: #cfcfcf;
+}
+
+.Tools button:not(:first-child) {
+	margin-top: 1px;
+}
+
+.Tools button:not(:last-child) {
+	margin-bottom: 0;
+}
+
+.Tools button[disabled] {
+	color: #838383;
+}
+
+.Tools button:not([disabled]):hover {
+	cursor: pointer;
+	border-color:  #2c2c2c;
+	background: linear-gradient(#757575, #626262);
+}
+
+.Tools button:not([disabled]).active {
+	border-color:  #2c2c2c;
+	background: linear-gradient(#3f3f3f, #373737);
+}
+
+.Tools button i.min {
+	font-size: 10px;
+	margin-top: 8px;
+	margin-left: 1px;
+}
+
+.Tools hr {
+	margin: 2px 5px 1px;
+	border: none;
+	height: 1px;
+	background: #383838;
+}
+
+
+
+
+
+
+.EditorPlace {
+	flex: 1;
+	margin: 3px;
+	overflow: scroll;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: #282828;
+	position: relative;
+}
+
+.EditorPlace > * {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.EditorBackground {
+	pointer-events: none;
+}
+
+.SevingProgress {
+	background: #535353;
+	border: 1px solid #282828;
+	color: #cfcfcf;
+	padding: 3px;
+	transition: transform 1s;
+}
+
+.SevingProgress.hide {
+	transform: translateY(-100%);
+}
+
+
+
+
+
+
+.Editor polyline {
+	fill: rgba(66, 188, 211, 0.3);
+	stroke: white;
+}
+
+.Editor .cut {
+	fill: none;
+	stroke: white;
+}
+
+.Editor polygon {
+	fill: rgba(255, 0, 0, 0.3);
+	stroke: rgba(255, 0, 0);
+}
+
+.Editor image {
+	outline: 1px solid rgba(255, 0, 0);
+}
+
+.Editor .select {
+	stroke: rgba(255, 255, 255);
+}
+
+.Editor .angle {
+	fill: rgba(255, 255, 0, 0.3);
+	stroke: rgba(255, 255, 0);
+}
+
+.Editor image.select {
+	outline-color: rgba(255, 255, 255);
+}
+
+[tool=move] .Editor :hover,
+[tool=edit] .Editor .angle:hover {
+	cursor: move;
+}
+
+[tool=edit] .Editor .angle:active {
+	opacity: 0;
+}
+
+[tool=move] .Editor :active,
+[tool=edit] .Editor .angle:active {
+	cursor: none;
+}
+
+
+
+.History {
+	border-left: 1px solid #282828;
+	width: 100px;
+	background: #464646;
+	display: flex;
+	flex-direction: column;
+	overflow: auto;
+	max-height: 100%;
+}
+
+.History table {
+	width: 100%;
+	border-spacing: 0;
+	background: red;
+}
+
+.History tr {
+	background: #535353;
+	color: white;
+	border-top: 1px solid #333333;
+	height: 26px;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.History tr:last-child {
+	border-bottom: 1px solid #333333;
+}
+
+.History tr.active {
+	background: #596678;
+}
+
+.History tr.shadow {
+	color: #888888;
+	font-style: italic;
+}
+
+.History td {
+	vertical-align: middle;
+}
+
+.History td:first-child {
+	text-align: center;
+	width: 28px;
+}

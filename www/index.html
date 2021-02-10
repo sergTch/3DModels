@@ -1,0 +1,54 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - arraycamera</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <script src="lib/three.js"></script>
+        <script src="lib/keybinder.js"></script>
+        <script src="lib/event-dispatcher.js"></script>
+        
+        <script src='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.js'></script>
+        <link href='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.css' rel='stylesheet' />
+
+	</head>
+	<body>
+        <div id='map' style='width: 5000px; height: 5000px;'></div>
+            <script>
+            mapboxgl.accessToken = 'pk.eyJ1Ijoic2VyZ2V5NTc2IiwiYSI6ImNranU0dHdjYTAzZTcyeW1zdmtoZXVnaXIifQ.5P3gsgT5INtsgEhQGv8mcw';
+            var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11'
+            });
+            </script>
+
+
+	</body>
+</html> -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="lib/three.js"></script>
+    <script src="lib/keybinder.js"></script>
+    <script src="lib/event-dispatcher.js"></script>
+<meta charset="utf-8" />
+<title>Add a 3D model</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css" rel="stylesheet" />
+<style>
+	body { margin: 0; padding: 0; }
+	#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<script src="https://unpkg.com/three@0.106.2/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.106.2/examples/js/loaders/GLTFLoader.js"></script>
+<div id="map"></div>
+<script src="data.js"></script>
+<script src="map.js"></script>
+<script src="model.js"></script>
+ 
+</body>
+</html>
