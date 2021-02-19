@@ -1,4 +1,4 @@
-var eps = 0.0000001
+var eps = 0.0001
 
 function showFromPoints2(points){
     p=[]
@@ -28,9 +28,10 @@ function oneLine(a,b,c){
     return Math.abs(l.f(c)) < eps
 }
 
-function onCut(a,b,c){
+function onCut(a,b,c, dist = 0){
     let l = new line(a, sub2(b,a))
-    return Math.abs(l.f(c)) < eps && (c.x-a.x)*(c.x-b.x)<eps && (c.y-a.y)*(c.y-b.y)<eps
+    dist = dist * Math.sqrt(l.a*l.a + l.b*l.b)
+    return Math.abs(l.f(c)) < eps + dist && (c.x-a.x)*(c.x-b.x) < eps + dist && (c.y-a.y)*(c.y-b.y) < eps + dist
 }
 
 function intersect(a, b, c, d){
@@ -72,9 +73,9 @@ function intersectInArr(p1, p2, i1, i2){
     return null
 }
 
-function inside(points, p) {
+function inside(points, p, dist = 0) {
     for (let i = 0; i < points.length; i++){
-        if (onCut(points[i], points[(i+1)%points.length], p))
+        if (onCut(points[i], points[(i+1)%points.length], p, dist))
             return 0
     }
 
@@ -103,6 +104,9 @@ function inside(points, p) {
 }
 
 function spawnNewP(polygon, knifeP){
+    console.log("spawn")
+    if (area(polygon) < 100)
+        return []
     for (let i = 0; i < polygon.length; i++){
         for (let j = 0; j < knifeP.length; j++){
             if (knifeP[j] == polygon[i]){
@@ -141,6 +145,14 @@ function spawnNewP(polygon, knifeP){
     }
 }
 
+function area(p){
+    var s = 0
+    for (let i = 0; i < p.length; i++){
+        s += (p[i].x - p[(i+1)%p.length].x) * (p[i].y + p[(i+1)%p.length].y)/2
+    }
+    return Math.abs(s)
+}
+
 function insideP(p1, p2){
     for (let i = 0; i < p1.length; i++){
         if (inside(p2, p1[i]) < 0)
@@ -172,7 +184,7 @@ function rebuild(knifeP, polygon){
     
     for (let i = 0; i < knifeP.length; i++)
         for (let j = 0; j < polygon.length; j++)
-            if (knifeP[i].eq(polygon[j]))
+            if (knifeP[i].eq(polygon[j], dist = 2))
                 knifeP[i] = polygon[j]
 
     for (let i = 0; i < knifeP.length; i++){
@@ -194,7 +206,13 @@ function rebuild(knifeP, polygon){
 function overlap(pol, knf){
     let knifeP = knf.slice()
     let polygon = pol.slice()
-    
+
+    // console.log("p1")
+    // for (var i = 0; i < knifeP.length; i++)
+    //     console.log("new point2(",knifeP[i].x, ",", knifeP[i].y, "), ")
+    // console.log("p2")
+    // for (var i = 0; i < polygon.length; i++)
+    //     console.log("new point2(",polygon[i].x, ",", polygon[i].y, "), ")
     rebuild(knifeP, polygon)
     let res = spawnNewP(polygon, knifeP)
     //console.log("res: ", res)

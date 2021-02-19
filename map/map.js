@@ -186,11 +186,10 @@ function onClick( event ) {
     console.log("floor: ", f + 1);
     console.log("room: ", r)
     house.hideTop(f+1)
-    house.filter(function 
-        (x) {
-            if (room == x) 
-                return new THREE.Color(0x00FF00)
-            return new THREE.Color(0x777777)
+    house.filter(function (x){
+        if (room == x) 
+            return new THREE.Color(0x00FF00)
+        return new THREE.Color(0x777777)
     })
     //alert("You chose room " + r.toString() + " on floor " + (f+1).toString())
 }

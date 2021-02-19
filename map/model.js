@@ -1,6 +1,19 @@
-
 class Room{
-    constructor(roomData, height, shift, size){
+    constructor(roomData, transform, height, shift, size){
+        // console.log(roomData["attr"]["entity-view-name-id"])
+        let points = roomData["points"].split(' ').map(function(item) {
+            return parseFloat(item, 10);
+        })
+        let x, y, angle = transform["angle"], dx = transform["px"], dy = transform["py"];
+        for (let j = 0; j < points.length;  j += 2){
+            // points[j] += dx
+            // points[j+1] += dy 
+            x = points[j] * Math.cos(angle * Math.PI / 180) - points[j+1] * Math.sin(angle * Math.PI / 180)
+            y = points[j] * Math.sin(angle * Math.PI / 180) + points[j+1] * Math.cos(angle * Math.PI / 180)
+            points[j] = x + dx
+            points[j+1] = y + dy
+        }
+
         this.shift = shift
         this.height = height
         const extrudeSettings = {
@@ -9,9 +22,9 @@ class Room{
             bevelEnabled: false,
         };
         const shape = new THREE.Shape();
-        shape.moveTo( roomData[0] * size, roomData[1] * size );
-        for (let j = 2; j < roomData.length;  j += 2){
-            shape.lineTo( roomData[j] * size, roomData[j+1] * size );
+        shape.moveTo( points[0] * size, points[1] * size );
+        for (let j = 2; j < points.length;  j += 2){
+            shape.lineTo( points[j] * size, points[j+1] * size );
         }
 
         const geometry = new THREE.ExtrudeBufferGeometry( shape, extrudeSettings );
@@ -24,6 +37,7 @@ class Room{
         this.mesh.add( edges );
         this.mesh.position.z += shift*size
     }
+
     hide(){
         this.mesh.material.transparent = true
         this.mesh.material.opacity = 0
@@ -54,21 +68,23 @@ class Room{
 }
 
 class House{
-    constructor(){
+    constructor(floors, heights) {
         this.floors = []
         this.size = 0.05
         let shift = 0
-        for (let i = 0; i < data.floors.length; i++){
+        for (let i = 0; i < floors.length; i++){
             this.floors.push([])
-            for (let j = 0; j < data.floors[i].length; j++){
-                this.floors[i].push(new Room(data.floors[i][j], data.heights[i], shift, this.size))
+            for (let j = 0; j < floors[i].length; j++){
+                for (let k = 0; k < floors[i][j]["polygons"].length; k++){
+                    this.floors[i].push(new Room(floors[i][j]["polygons"][k]["attr"], floors[i][j]["transform"], heights[i], shift, this.size))
+                }
             }
-            shift += data.heights[i]
-        }   
+            shift += heights[i]
+        }
         this.visible = this.floors.length
     }
 
-    addToScene() {
+    addToScene(scene) {
         for (let i = 0; i < this.floors.length; i++){
             for (let j = 0; j < this.floors[i].length; j++){
                 scene.add(this.floors[i][j].mesh)
@@ -77,12 +93,12 @@ class House{
     }
     hideTop(f) {
         for (let i = 0; i < f; i++){
-            for (let j = 0; j < data.floors[i].length; j++){
+            for (let j = 0; j < this.floors[i].length; j++){
                 this.floors[i][j].show()
             }
         }
         for (let i = f; i < this.floors.length; i++){
-            for (let j = 0; j < data.floors[i].length; j++){
+            for (let j = 0; j < this.floors[i].length; j++){
                 //this.floors[i][j].mesh.visible = false
                 this.floors[i][j].hide()
             }
@@ -91,7 +107,7 @@ class House{
     }
     show() {
         for (let i = 0; i < this.floors.length; i++){
-            for (let j = 0; j < data.floors[i].length; j++){
+            for (let j = 0; j < this.floors[i].length; j++){
                 this.floors[i][j].show()
             }
         }
@@ -99,7 +115,7 @@ class House{
     }
     filter(f) {
         for (let i = 0; i < this.floors.length; i++){
-            for (let j = 0; j < data.floors[i].length; j++){
+            for (let j = 0; j < this.floors[i].length; j++){
                 this.floors[i][j].mesh.material.color = f(this.floors[i][j])
                 // if (f(this.floors[i][j]))
                 //     this.floors[i][j].mesh.material.color = new THREE.Color(0xFF0000)
@@ -110,11 +126,10 @@ class House{
 }
 
 function createScene(){
-    //let scene;
     scene = new THREE.Scene();
-    house = new House();
+    house = new House(floors, heights);
     console.log(house)
-    house.addToScene();
+    house.addToScene(scene);
     scene.rotation.x = -Math.PI/2
     //scene.rotation.z = Math.PI
     return scene
